@@ -1,0 +1,20 @@
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+	 directUrl = env("DIRECT_URL") //untuk sync db supabse
+    url      = env("DATABASE_URL") //untuk query 
+}
+
+model Category{
+	 id        String      @id @unique @default(uuid())
+
+	 name      String   @unique
+	 productCount Int @default(0)
+	 
+	 createdAt DateTime @default(now())
+	 updatedAt DateTime @updatedAt
+}
