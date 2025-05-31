@@ -14,17 +14,34 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 import type { NextPageWithLayout } from "../_app";
 import { Button } from "@/components/ui/button";
+import { api } from "@/utils/api";
+import { useCartStore } from "@/store/cart";
 
 const DashboardPage: NextPageWithLayout = () => {
+  const cartStore = useCartStore();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [orderSheetOpen, setOrderSheetOpen] = useState(false);
+
+  const { data: produtcs } = api.product.getProdutcs.useQuery();
 
   const handleCategoryClick = (categoryId: string) => {
     setSelectedCategory(categoryId);
   };
 
-  const handleAddToCart = (productId: string) => {};
+  const handleAddToCart = (productId: string) => {
+    const productToAdd = produtcs?.find((product) => product.id === productId);
+
+    if (!productToAdd) return;
+
+    cartStore.addToCart({
+      productId: productToAdd.id,
+      name: productToAdd.name,
+      price: productToAdd.price,
+      imageUrl: productToAdd.imageUrl ?? "https://placehold.co/600x400",
+    });
+  };
 
   const filteredProducts = useMemo(() => {
     return PRODUCTS.filter((product) => {
@@ -44,18 +61,20 @@ const DashboardPage: NextPageWithLayout = () => {
       <DashboardHeader>
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <DashboardTitle>Dashboard</DashboardTitle>
+            <DashboardTitle>Dashboard {cartStore.items.length}</DashboardTitle>
             <DashboardDescription>
               Welcome to your Simple POS system dashboard.
             </DashboardDescription>
           </div>
 
-          <Button
-            className="animate-in slide-in-from-right"
-            onClick={() => setOrderSheetOpen(true)}
-          >
-            <ShoppingCart /> Cart
-          </Button>
+          {!!cartStore.items.length && (
+            <Button
+              className="animate-in slide-in-from-right"
+              onClick={() => setOrderSheetOpen(true)}
+            >
+              <ShoppingCart /> Cart
+            </Button>
+          )}
         </div>
       </DashboardHeader>
 
@@ -81,8 +100,22 @@ const DashboardPage: NextPageWithLayout = () => {
             />
           ))}
         </div>
-
         <div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {produtcs?.map((product) => (
+              <ProductMenuCard
+                key={product.id}
+                productId={product.id}
+                name={product.name}
+                price={product.price}
+                imageUrl={product.imageUrl ?? "https://placehold.co/600x400"}
+                onAddToCart={handleAddToCart}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* <div>
           {filteredProducts.length === 0 ? (
             <div className="my-8 flex flex-col items-center justify-center">
               <p className="text-muted-foreground text-center">
@@ -100,7 +133,7 @@ const DashboardPage: NextPageWithLayout = () => {
               ))}
             </div>
           )}
-        </div>
+        </div> */}
       </div>
 
       <CreateOrderSheet

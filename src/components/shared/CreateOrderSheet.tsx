@@ -21,20 +21,23 @@ import {
   SheetTitle,
 } from "../ui/sheet";
 import { PaymentQRCode } from "./PaymentQrCode";
+import { useCartStore } from "@/store/cart";
+import { api } from "@/utils/api";
 
 type OrderItemProps = {
   id: string;
   name: string;
   price: number;
   quantity: number;
+  imageUrl: string;
 };
 
-const OrderItem = ({ id, name, price, quantity }: OrderItemProps) => {
+const OrderItem = ({ id, name, price, quantity, imageUrl }: OrderItemProps) => {
   return (
     <div className="flex gap-3" key={id}>
       <div className="relative aspect-square h-20 shrink-0 overflow-hidden rounded-xl">
         <Image
-          src={PRODUCTS.find((p) => p.id === id)?.image ?? ""}
+          src={imageUrl ?? ""}
           alt={name}
           fill
           unoptimized
@@ -79,21 +82,42 @@ export const CreateOrderSheet = ({
   open,
   onOpenChange,
 }: CreateOrderSheetProps) => {
+  const cartStore = useCartStore();
+
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentInfoLoading, setPaymentInfoLoading] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
-  const subtotal = 100000;
-  const tax = useMemo(() => subtotal * 0.17, [subtotal]);
+  const subtotal = cartStore.items.reduce((a, b) => {
+    return a + b.price * b.quantity;
+  }, 0);
+
+  const tax = useMemo(() => subtotal * 0.1, [subtotal]);
   const grandTotal = useMemo(() => subtotal + tax, [subtotal, tax]);
 
-  const handleCreateOrder = () => {
-    setPaymentDialogOpen(true);
-    setPaymentInfoLoading(true);
+  const { data: createOrderResponse, mutate: createOrder } =
+    api.order.createOrder.useMutation({
+      onSuccess: () => {
+        setPaymentDialogOpen(true);
+      },
+    });
 
+  const handleCreateOrder = () => {
+    if (cartStore.items.length === 0) return;
+    setPaymentInfoLoading(true);
     setTimeout(() => {
       setPaymentInfoLoading(false);
     }, 3000);
+    setPaymentDialogOpen(true);
+    createOrder({
+      orderItems: cartStore.items.map((item) => {
+        return {
+          productId: item.productId,
+          quantity: item.quantity,
+        };
+      }),
+    });
+    cartStore.items = [];
   };
 
   const handleRefresh = () => {
@@ -111,10 +135,25 @@ export const CreateOrderSheet = ({
             </SheetDescription>
           </SheetHeader>
 
-          <div className="space-y-4 overflow-y-scroll p-4">
+          <div className="flex-1 space-y-4 overflow-y-scroll p-4">
             <h1 className="text-xl font-medium">Order Items</h1>
             <div className="flex flex-col gap-6">
-              {/* Map order items here */}
+              {cartStore.items.length === 0 ? (
+                <p className="text-muted-foreground">
+                  Your cart is empty. Add some products to create an order.
+                </p>
+              ) : (
+                cartStore.items.map((item) => (
+                  <OrderItem
+                    key={item.productId}
+                    id={item.productId}
+                    name={item.name}
+                    price={item.price}
+                    quantity={item.quantity}
+                    imageUrl={item.imageUrl}
+                  />
+                ))
+              )}
             </div>
           </div>
 
@@ -164,15 +203,17 @@ export const CreateOrderSheet = ({
                 </Button>
 
                 {!paymentSuccess ? (
-                  <PaymentQRCode qrString="qr-string" />
+                  <PaymentQRCode qrString={createOrderResponse?.qrCode ?? ""} />
                 ) : (
                   <CheckCircle2 className="size-80 text-green-500" />
                 )}
 
-                <p className="text-3xl font-medium">{toRupiah(grandTotal)}</p>
+                <p className="text-3xl font-medium">
+                  {toRupiah(createOrderResponse?.order.grandTotal ?? 0)}
+                </p>
 
                 <p className="text-muted-foreground text-sm">
-                  Transaction ID: 1234567890
+                  {createOrderResponse?.order.id}
                 </p>
               </>
             )}

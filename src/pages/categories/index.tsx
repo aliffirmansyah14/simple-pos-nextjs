@@ -125,11 +125,9 @@ const CategoriesPage: NextPageWithLayout = () => {
               <AlertDialogHeader>
                 <AlertDialogTitle>Add New Category</AlertDialogTitle>
               </AlertDialogHeader>
+
               <Form {...createCategoryForm}>
-                <CategoryForm
-                  onSubmit={handleSubmitCreateCategory}
-                  submitText="Create Category"
-                />
+                <CategoryForm onSubmit={handleSubmitCreateCategory} />
               </Form>
 
               <AlertDialogFooter>
@@ -147,41 +145,32 @@ const CategoriesPage: NextPageWithLayout = () => {
         </div>
       </DashboardHeader>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {categories?.map((category) => {
-          return (
-            <CategoryCatalogCard
-              key={category.id}
-              name={category.name}
-              productCount={category.productCount}
-              onEdit={() => handleClickEditCategory(category.id, category.name)}
-              onDelete={() => handleClickDeleteCategory(category.id)}
-            />
-          );
-        })}
-        {/* {CATEGORIES.length === 0 ? (
-          <div className="rounded-md border">
-            <div className="p-8 text-center">
-              <p className="text-muted-foreground">No categories found</p>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Get started by creating your first category
-              </p>
-            </div>
+      {categories?.length === 0 ? (
+        <div className="rounded-md border">
+          <div className="p-8 text-center">
+            <p className="text-muted-foreground">No categories found</p>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Get started by creating your first category
+            </p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {CATEGORIES.filter((cat) => cat.id !== "all").map((category) => (
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {categories?.map((category) => {
+            return (
               <CategoryCatalogCard
                 key={category.id}
                 name={category.name}
-                productCount={category.count}
-                onEdit={() => handleClickEditCategory(category)}
+                productCount={category.productCount}
+                onEdit={() =>
+                  handleClickEditCategory(category.id, category.name)
+                }
                 onDelete={() => handleClickDeleteCategory(category.id)}
               />
-            ))}
-          </div>
-        )} */}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       <AlertDialog
         open={editCategoryDialogOpen}
@@ -192,10 +181,7 @@ const CategoriesPage: NextPageWithLayout = () => {
             <AlertDialogTitle>Edit Category</AlertDialogTitle>
           </AlertDialogHeader>
           <Form {...editCategoryForm}>
-            <CategoryForm
-              onSubmit={handleSubmitEditCategory}
-              submitText="Edit Category"
-            />
+            <CategoryForm onSubmit={handleSubmitEditCategory} />
           </Form>
 
           <AlertDialogFooter>
